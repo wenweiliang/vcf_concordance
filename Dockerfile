@@ -8,5 +8,4 @@ LABEL tags="Genomics"
 MAINTAINER Wen-Wei Liang <wenwiliang@gmail.com>
 
 USER root
-
-Run 
+ 
