@@ -8,4 +8,4 @@ MAINTAINER Wen-Wei Liang <wenwiliang@gmail.com>
 
 USER root
 
-RUN conda install pyvcf bgzip tabix  
+RUN conda install pyvcf tabix
