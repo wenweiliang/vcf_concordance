@@ -11,4 +11,3 @@ USER root
 RUN conda install tabix
 RUN pip install --upgrade pip
 RUN pip install pyvcf
-COPY calc_vcf_concordance.py .
