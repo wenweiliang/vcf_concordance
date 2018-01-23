@@ -10,4 +10,4 @@ USER root
 
 RUN conda install tabix
 RUN pip install --upgrade pip
-RUN pip install pyvcf
+RUN pip install pyvcf pandas

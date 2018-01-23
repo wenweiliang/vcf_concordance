@@ -5,6 +5,7 @@ import sys, os
 import getopt
 import gzip
 import vcf
+import pandas as pd
 
 class autovivification(dict):
     '''Implementation of perl's autovivification feature.'''
@@ -110,15 +111,19 @@ def prefix(rec, usechr):
         rec.CHROM = rec.CHROM.replace('chr', '')
     
     return rec
-    
-    
+
+#Generate the id convertion table
+tcga_id=pd.read_table("TCGA_WGS_gspath_forDeepVariant.txt")
+tcga_id["WXS_file_name"]=tcga_id["WXSvcf"].str.split("/").str[8]
+wgs2tcga_dict=tcga_id[["case_barcode","CGHub_file_id"]].drop_duplicates().set_index("CGHub_file_id")["case_barcode"].to_dict()
+wxs2tcga_dict=tcga_id[["case_barcode", "WXS_file_name"]].drop_duplicates().set_index("WXS_file_name")["case_barcode"].to_dict()
 def evaluate(submission, truth, sampleMatch=False):
     ''' return TP, FP and FN counts '''
 
     subvcfh = vcf.Reader(filename=submission)
     truvcfh = vcf.Reader(filename=truth)
 
-    outF = submission.replace("vcf.gz","validated.tsv")
+    outF = submission.replace("vcf.gz","mutualvalidated.tsv")
     outFH = open(outF, "w")
     # truWtCount = 0
 
@@ -145,26 +150,24 @@ def evaluate(submission, truth, sampleMatch=False):
     for trurec in truvcfh:
         var = str(trurec.CHROM) + ":" + str(trurec.POS) + ":" + str(trurec.REF)
         alt = str(trurec.ALT)
-        #print var
 
         for sample in trurec.samples:
             # get the sample name
             called_name = (str(sample).split(' ')[0]).split('=')[1].strip(',')
+            if called_name[:4]!="TCGA":
+                if called_name in wgs2tcga_dict:
+                    sampleID = wgs2tcga_dict[called_name]
+                elif called_name in wxs2tcga_dict:
+                    sampleID = wxs2tcga_dict[called_name]
             # TCGA barcode name: may extract more down to sample?
-            sampleID = called_name[0:12]
-            #print sampleID
+            else:
+                sampleID = called_name[0:12]
             genotype = format(sample['GT'])
-            #print genotype
             truGeno[var][alt][sampleID] = genotype
-            # ++trurecs 
-            # #print var + ":" + str(genotype)
-            # if genotype == "0/0": #WT
-            #     ++truWtCount
     
     for subrec in subvcfh:
         var = str(subrec.CHROM) + ":" + str(subrec.POS) + ":" + str(subrec.REF)
         alt = str(subrec.ALT)
-        #print (var)
         if not var in truGeno:
             continue
         if not alt in truGeno[var]:
@@ -172,7 +175,13 @@ def evaluate(submission, truth, sampleMatch=False):
 
         for sample in subrec.samples:
             called_name = (str(sample).split(' ')[0]).split('=')[1].strip(',')
-            sampleID = called_name[0:12]
+            if called_name[:4]!="TCGA":
+                if called_name in wgs2tcga_dict:
+                    sampleID = wgs2tcga_dict[called_name]
+                elif called_name in wxs2tcga_dict:
+                    sampleID = wxs2tcga_dict[called_name]
+            else:
+                sampleID = called_name[0:12]
 
             if sampleID not in truGeno[var][alt]: # not in the GENOTYPE file
                 continue
