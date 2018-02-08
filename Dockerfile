@@ -8,6 +8,6 @@ MAINTAINER Wen-Wei Liang <wenwiliang@gmail.com>
 
 USER root
 
-RUN conda install tabix
+RUN apt-get install tabix
 RUN pip install --upgrade pip
 RUN pip install pyvcf pandas
